@@ -1,0 +1,84 @@
+<title>Fetch Test</title>
+
+<div id="wrapper"></div>
+
+<script>
+  'use strict';
+
+  {
+
+    /*
+     * Given an array of JSON strings, parse each string and add it to the DOM using a document fragment.
+     */
+    function renderToDOM (tokens) {
+      let frag = document.createDocumentFragment();
+      for (let i = 0, len = tokens.length; i < len; i++) {
+        let parsedToken = JSON.parse(tokens[i]);
+        let html = template `<div class="message">${parsedToken.message}</div><div class="name">- ${parsedToken.name}</div>`;
+        let div = document.createElement('div');
+        div.innerHTML = html;
+        frag.appendChild(div);
+      }
+      document.getElementById('wrapper').appendChild(frag);
+    }
+
+
+    /*
+     * Tag function for constructing string from string template
+     */
+    function template (literals) {
+      let result = '';
+      let substitutions = Array.prototype.slice.call(arguments, template.length);
+
+      for (let i = 0; i < substitutions.length; i++) {
+        result += literals[i];
+        result += substitutions[i];
+      }
+
+      // add the last literal
+      result += literals[literals.length - 1];
+
+      return result;
+    }
+
+
+    /*
+     * Keep reading from stream until it's done.
+     */
+    let consumeReader = (function () {
+      // use only one worker per stream because it's keeping track of partial JSON data between stream reads
+      let worker = new Worker('worker.js');
+
+      return function (reader, total) {
+        total = total || 0;
+        return reader.read().then( function(result) {
+          if (result.done) {
+            return;
+          }
+
+          let decoder = new TextDecoder();
+          worker.postMessage(decoder.decode(result.value));
+          worker.onmessage = function(e) {
+            renderToDOM(e.data);
+          }
+
+          total += result.value.byteLength;
+          console.log(result.value.byteLength + ' bytes (' + total + ' total)');
+
+          return consumeReader(reader, total);
+        });
+      };
+    })();
+
+    
+    /*
+     * Request a JSON stream
+     */
+    fetch('/fetch').then( function (response) {
+      let reader = response.body.getReader();
+      consumeReader(reader);
+    });
+
+  }
+
+</script>

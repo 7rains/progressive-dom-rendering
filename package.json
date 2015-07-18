@@ -1,0 +1,17 @@
+{
+  "name": "fetch-test",
+  "version": "0.0.1",
+  "description": "Playing with a streaming response using the fetch API.",
+  "author": "Steven Goodwin",
+  "private": true,
+  "license": "MIT",
+  "dependencies": {
+    "minimist": "*",
+    "koa": "*",
+    "koa-static": "*",
+    "koa-route": "*"
+  },
+  "scripts": {
+    "start": "node --harmony server.js"
+  }
+}
